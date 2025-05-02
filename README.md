@@ -1,4 +1,160 @@
-cosmic_binary = []
+# ساختار پروژه
+.
+├── app/                  # کد اصلی برنامه
+│   ├── core/            # ماژول‌های اصلی
+│   ├── utils/           # ابزارهای کمکی
+│   └── tests/           # تست‌ها
+├── data/                # داده‌های آموزشی
+├── docs/                # مستندات
+├── Dockerfile           # پیکربندی داکر
+├── requirements.txt     # وابستگی‌ها
+└── README.md            # راهنمای پروژهimport org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class TransactionService {
+    private final TransactionRepository transactionRepository;
+
+    @Autowired
+    public TransactionService(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
+    }
+
+    public List<Transaction> getTransactionHistory(Long userId) {
+        return transactionRepository.findBySenderIdOrReceiverId(userId, userId);
+    }
+}FROM python:3.9-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.9-slim
+WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY . .
+CMD ["python", "bot.py"]import pyotp
+
+secret = pyotp.random_base32()  # ایجاد کلید مخفی
+totp = pyotp.TOTP(secret)  # تولید رمز یکبار مصرف
+
+# ارسال رمز یکبار مصرف به کاربر
+print(f"رمز عبور شما: {totp.now()}")
+
+# بررسی اعتبار رمز عبور ورودی
+user_code = input("لطفاً رمز عبور را وارد کنید: ")
+if totp.verify(user_code):
+    print("دسترسی تأیید شد! ✅")
+else:
+    print("رمز عبور اشتباه است! ❌")class AdvancedPersianChatbot:
+    def __init__(self):
+        self.model_name = "HooshvareLab/gpt2-fa"
+        self.tokenizer = GPT2Tokenizer.from_pretrained(self.model_name)
+        self.model = GPT2LMHeadModel.from_pretrained(self.model_name)
+        self.normalizer = Normalizer()
+        self.persian_responses = {
+            "اسمت": ["من ربات فارسی‌زبان شما هستم!", "اسم من چت‌بات مهربونه!"],
+            "سن": ["من تازه متولد شدم، ولی کلی اطلاعات دارم!"],
+            "شوخی": ["می‌دونی چرا کامپیوتر شیرازی خراب شد؟ چون زیاد بیت می‌خورد!"]
+        }
+    
+    def process_input(self, text):
+        text = self.normalizer.normalize(text)
+        # پردازش‌های بیشتر مثل تشخیص موجودیت‌ها
+        return text
+    
+    def generate_response(self, text):
+        processed = self.process_input(text)
+        
+        # اول بررسی پاسخ‌های از پیش تعریف شده
+        for key in self.persian_responses:
+            if key in processed:
+                return random.choice(self.persian_responses[key])
+        
+        # تولید پاسخ با مدل
+        inputs = self.tokenizer.encode(processed, return_tensors="pt")
+        outputs = self.model.generate(
+            inputs,
+            max_length=100,
+            do_sample=True,
+            top_k=50,
+            top_p=0.95,
+            temperature=0.7
+        )
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)import random
+import json
+import nltk
+from nltk.chat.util import Chat, reflections
+
+# ابتدا کتابخانه NLTK را نصب کنید:
+# pip install nltk
+
+# تنظیمات پاسخ‌های هوشمند
+pairs = [
+    [
+        r"(سلام|درود|سلامتی)",
+        ["سلام عزیزم! چطوری؟ 😊", "درود بر تو! چخبر؟ 🚀"]
+    ],
+    [
+        r"(اسمت|نامت) چیه؟",
+        ["من 'بات بامزه‌ی هوشمند' هستم! ولی تو می‌تونی اسم مستعاری برام انتخاب کنی 😉"]
+    ],
+    [
+        r"(خداحافظ|بای|خدانگهدار)",
+        ["مواظب خودت باش! راستی قبل رفتن این میم رو ببین: (⌒‿⌒)", "بیخیال! برو یه فیلم ببین... بعداً میبینمت! 🎬"]
+    ],
+    [
+        r"(شوخی|طنز|بامزه)",
+        ["می‌دونی چرا کتاب‌ها هرگز دعوا نمی‌کنن؟ چون همیشه یه صفحه دارن! 📖",
+         "چرا کامپیوتر خراب شد؟ چون هیچ‌کس به حرف‌های بایت گوش نمی‌داد! 💻"]
+    ],
+    [
+        r"(ساعت|زمان) چنده؟",
+        ["الان دقیقاً موقعیه که یه قهوه بخوری! ☕ (ولی واقعاً ساعت %s هست)" % datetime.now().strftime("%H:%M")]
+    ],
+    [
+        r"(.*)",
+        ["جالب گفتی! ولی من الان حواسم به میمه... بگو 'میم' یه چیز بامزه ببین! 🤪",
+         "اینو بلد نیستم، ولی می‌تونم برات یه شوخی تعریف کنم! بگو 'شوخی' 😄"]
+    ]
+]
+
+class SmartBot(Chat):
+    def __init__(self):
+        self.memes = ["(╯°□°）╯︵ ┻━┻", "¯\_(ツ)_/¯", "(≧▽≦)/", "ಠ_ಠ"]
+        self.chat_history = []
+        super().__init__(pairs, reflections)
+    
+    def respond(self, user_input):
+        response = super().respond(user_input)
+        if not response:
+            response = random.choice([
+                "دارم فکر می‌کنم... صبر کن ببینم مغزم جواب میده یا نه! 🤔",
+                "این یکی رو بلد نیستم، ولی می‌تونم برات یه داستان در مورد پنگوئن‌ها بگم! 🐧"
+            ])
+        
+        self.chat_history.append(f"کاربر: {user_input}")
+        self.chat_history.append(f"ربات: {response}")
+        return response
+
+# اجرای ربات
+if __name__ == "__main__":
+    nltk.download('punkt')
+    bot = SmartBot()
+    print("ربات هوشمند فعال شد! (برای خروج بنویس 'خداحافظ')")
+    
+    while True:
+        try:
+            user_input = input("تو: ")
+            if user_input.lower() in ['خداحافظ', 'بای']:
+                print(bot.respond(user_input))
+                with open("chat_history.json", "w") as f:
+                    json.dump(bot.chat_history, f, ensure_ascii=False, indent=4)
+                break
+            print("ربات:", bot.respond(user_input))
+        except KeyboardInterrupt:
+            print("\nربات: آی آی! اینجوری نکن دا... ذخیره کردم و رفتم! 😅")
+            breakcosmic_binary = []
 for char in message:
     # Get ASCII value
     ascii_val = ord(char)
