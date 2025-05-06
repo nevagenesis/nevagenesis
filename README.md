@@ -1,4 +1,140 @@
-# ساختار پروژه
+## گزارش اجرای ۲۰۲۳/۱۱/۲۰
+- **مدت اجرا:** ۳ ساعت ۱۲ دقیقه
+- **حداکثر مصرف منابع:**
+  - CPU: 78% (در زمان index کردن)
+  - RAM: 3.2GB
+- **مشکلات شناسایی شده:**
+  1. افزایش تدریجی مصرف حافظه (مظنون: memory leak در پردازشگر Ray)
+  2. تاخیر ۲ ثانیه‌ای در پاسخ‌های Real-time
+- **اقدامات انجام شده:**
+  - کاهش `batch_size` از ۵۰ به ۳۰
+  - افزایش `swap` به ۲GB۳۱۲۵۰۲## گزارش اجرای ۲۰۲۳/۱۱/۲۰
+- **مدت اجرا:** ۳ ساعت ۱۲ دقیقه
+- **حداکثر مصرف منابع:**
+  - CPU: 78% (در زمان index کردن)
+  - RAM: 3.2GB
+- **مشکلات شناسایی شده:**
+  1. افزایش تدریجی مصرف حافظه (مظنون: memory leak در پردازشگر Ray)
+  2. تاخیر ۲ ثانیه‌ای در پاسخ‌های Real-time
+- **اقدامات انجام شده:**
+  - کاهش `batch_size` از ۵۰ به ۳۰
+  - افزایش `swap` به ۲GBimport plotly.express as px
+import pandas as pd
+
+df = pd.read_csv('metrics.csv')
+fig = px.line(df, x='time', y=['cpu', 'ram'], title='مصرف منابع')
+fig.write_html('report.html')# ترمینال 1: زیرساخت
+docker-compose -f lightweight-infra.yml up -d
+
+# ترمینال 2: مدیریت منابع
+python resource_manager.py
+
+# ترمینال 3: خزنده
+python smart_crawler.py
+
+# ترمینال 4: پردازش Real-time
+python realtime_processor.py# بازیابی آخرین حالت
+   python recovery_script.py --last-checkpointpython config_ray.py &
+python crawler_light.py &
+python realtime_indexer.py &
+python batch_indexer.pyresources:
+  max_cpu: 7  # از 8 هسته
+  max_ram: 3.5  # از 4GB
+components:
+  crawler:
+    max_pages: 10000
+    depth: 2
+  indexer:
+    batch_size: 50
+    compression: lz4python config_ray.py &
+python crawler_light.py &
+python realtime_indexer.py &
+python batch_indexer.pyresources:
+  max_cpu: 7  # از 8 هسته
+  max_ram: 3.5  # از 4GB
+components:
+  crawler:
+    max_pages: 10000
+    depth: 2
+  indexer:
+    batch_size: 50
+    compression: lz4# docker-compose-monitoring.yml
+services:
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"git clone https://github.com/your-repo/distributed-search-engine.git
+cd distributed-search-engine
+make run-all# docker-compose-monitoring.yml
+services:
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"git clone https://github.com/your-repo/distributed-search-engine.git
+cd distributed-search-engine
+make run-all# ۲. هسته پردازش موازی (Ray)
+@ray.remote
+class BatchIndexer:
+    def __init__(self):
+        self.index = build_index()  # استفاده از Whoosh/Elasticsearch
+    
+    def process(self, data):
+        # پردازش آفلاین
+        self.index.add_document(data)
+        return "processed"
+
+# راه‌اندازی خوشه
+ray.init(address='auto')
+batch_shards = [BatchIndexer.remote() for _ in range(10)]# ۳. پردازش جریان با Flink
+from pyflink.datastream import StreamExecutionEnvironment
+from pyflink.table import StreamTableEnvironment
+
+env = StreamExecutionEnvironment.get_execution_environment()
+t_env = StreamTableEnvironment.create(env)
+
+# تعریف منبع کافکا
+t_env.execute_sql("""
+    CREATE TABLE kafka_source (
+        url STRING,
+        content STRING
+    ) WITH (
+        'connector' = 'kafka',
+        'topic' = 'web_pages',
+        'properties.bootstrap.servers' = 'localhost:9092',
+        'format' = 'json'
+    )
+""")
+
+# پردازش Real-time
+t_env.execute_sql("""
+    CREATE TABLE redis_sink (
+        doc_id STRING,
+        content STRING,
+        PRIMARY KEY (doc_id) NOT ENFORCED
+    ) WITH (
+        'connector' = 'redis',
+        'host' = 'localhost',
+        'port' = '6379',
+        'format' = 'json'
+    )
+""")
+
+# انتقال داده به Redis
+t_env.execute_sql("""
+    INSERT INTO redis_sink
+    SELECT 
+        MD5(url) as doc_id, 
+        content 
+    FROM kafka_source
+""")# ساختار پروژه
 .
 ├── app/                  # کد اصلی برنامه
 │   ├── core/            # ماژول‌های اصلی
